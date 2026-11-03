@@ -38,6 +38,16 @@ function Tracker() {
   }, []);
 
   useEffect(() => {
+    const fallbackTimer = window.setTimeout(() => {
+      setRoutes((current) => current.length ? current : [fallbackRoute]);
+      setBuses((current) => current.length ? current : [fallbackBus]);
+      setIsLoading(false);
+      setReconnecting(true);
+    }, 1200);
+    return () => window.clearTimeout(fallbackTimer);
+  }, []);
+
+  useEffect(() => {
     let alive = true;
     async function loadTracker() {
       setIsLoading(true);
@@ -113,6 +123,30 @@ function Tracker() {
     </main>
   );
 }
+
+const fallbackRoute: RouteInfo = {
+  id: "route-a-demo",
+  name: "Route A",
+  description: "Cebu City public demo route",
+  start_terminal: "Colon Street",
+  end_terminal: "Cebu IT Park",
+  path: [[10.2956, 123.9013], [10.3111, 123.8915], [10.3187, 123.905], [10.3294, 123.9057]],
+  stops: [
+    { id: "colon", name: "Colon Street", lat: 10.2956, lng: 123.9013, sequence: 0, is_terminal: true },
+    { id: "fuente", name: "Fuente Osmeña Circle", lat: 10.3111, lng: 123.8915, sequence: 1, is_terminal: false },
+    { id: "ayala", name: "Ayala Center Cebu", lat: 10.3187, lng: 123.905, sequence: 2, is_terminal: false },
+    { id: "it-park", name: "Cebu IT Park", lat: 10.3294, lng: 123.9057, sequence: 3, is_terminal: true },
+  ],
+};
+
+const fallbackBus: Bus = {
+  id: "bus-01-demo",
+  bus_code: "BUS-01",
+  plate_number: "EBUS-001",
+  route_id: "route-a-demo",
+  is_public: true,
+  location: { lat: 10.304, lng: 123.897, speed_kmh: 24, heading: 32, satellites: 10, gps_time: new Date().toISOString(), received_at: new Date().toISOString() },
+};
 
 function MapView({ routes, buses, selectedRoute, selectedRouteId, setSelectedRouteId, onBusClick, now, isLoading, reconnecting }: { routes: RouteInfo[]; buses: Bus[]; selectedRoute: RouteInfo | undefined; selectedRouteId: string | "all"; setSelectedRouteId: (id: string | "all") => void; onBusClick: (bus: Bus) => void; now: number; isLoading: boolean; reconnecting: boolean; }) {
   return <div className="relative min-h-[calc(100vh-5rem)] md:min-h-screen">
