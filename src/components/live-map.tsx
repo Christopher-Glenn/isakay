@@ -21,7 +21,7 @@ function CenterOnLocation({ location }: { location: Coordinates | null }) {
 
 const busIcon = L.divIcon({
   className: "",
-  html: '<span class="live-map-bus" aria-hidden="true">🚌</span>',
+  html: '<span class="live-map-bus" aria-hidden="true"><span class="live-map-bus-mark">BUS</span><span class="live-map-bus-body"></span></span>',
   iconSize: [42, 42],
   iconAnchor: [21, 21],
 });
