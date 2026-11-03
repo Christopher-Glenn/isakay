@@ -12,3 +12,4 @@
 ## Application rules
 - Keep E-Bus public tracking in client-side, RLS-filtered queries with Realtime updates; reserve privileged actions for authenticated server boundaries.
 - GPS updates are accepted only by the public update-location server endpoint using a per-device SHA-256 token hash; no GPS token is exposed in the passenger app or administrator logs.
+- The passenger tracker treats bus movement as continuous around Iloilo and does not display fixed bus stops; the rider's optional browser location stays only in that browser session.

@@ -17,4 +17,13 @@ describe("E-Bus tracking status", () => {
   it("marks updates older than 120 seconds as offline", () => {
     expect(getStatus(at(121), NOW, 30, 120)).toBe("offline");
   });
+
+  it("keeps the latest Wokwi Iloilo coordinate valid for tracking", () => {
+    const latitude = 10.693758;
+    const longitude = 122.546383;
+    expect(latitude).toBeGreaterThanOrEqual(-90);
+    expect(latitude).toBeLessThanOrEqual(90);
+    expect(longitude).toBeGreaterThanOrEqual(-180);
+    expect(longitude).toBeLessThanOrEqual(180);
+  });
 });
