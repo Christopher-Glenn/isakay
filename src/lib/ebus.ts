@@ -25,7 +25,7 @@ export type Bus = {
   plate_number: string;
   route_id: string | null;
   is_public: boolean;
-  location?: {
+  location: {
     lat: number;
     lng: number;
     speed_kmh: number;
@@ -33,7 +33,7 @@ export type Bus = {
     satellites: number;
     gps_time: string;
     received_at: string;
-  };
+  } | undefined;
 };
 
 export const getStatus = (

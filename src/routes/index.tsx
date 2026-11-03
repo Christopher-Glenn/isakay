@@ -59,7 +59,19 @@ function Tracker() {
         stops: (stopRows ?? []).filter((stop) => stop.route_id === route.id),
       }));
       setRoutes(safeRoutes);
-      setBuses((busRows ?? []).map((bus) => ({ ...bus, location: (locationRows ?? []).find((location) => location.bus_id === bus.id) })));
+      setBuses((busRows ?? []).map((bus) => {
+        const rawLocation = (locationRows ?? []).find((location) => location.bus_id === bus.id);
+        const location = rawLocation ? {
+          lat: rawLocation.lat,
+          lng: rawLocation.lng,
+          speed_kmh: rawLocation.speed_kmh,
+          heading: rawLocation.heading,
+          satellites: rawLocation.satellites,
+          gps_time: rawLocation.gps_time,
+          received_at: rawLocation.received_at,
+        } : undefined;
+        return { ...bus, location };
+      }));
       setReconnecting(false);
       setIsLoading(false);
     }
@@ -102,7 +114,7 @@ function Tracker() {
   );
 }
 
-function MapView({ routes, buses, selectedRoute, selectedRouteId, setSelectedRouteId, onBusClick, now, isLoading, reconnecting }: { routes: RouteInfo[]; buses: Bus[]; selectedRoute?: RouteInfo; selectedRouteId: string | "all"; setSelectedRouteId: (id: string | "all") => void; onBusClick: (bus: Bus) => void; now: number; isLoading: boolean; reconnecting: boolean; }) {
+function MapView({ routes, buses, selectedRoute, selectedRouteId, setSelectedRouteId, onBusClick, now, isLoading, reconnecting }: { routes: RouteInfo[]; buses: Bus[]; selectedRoute: RouteInfo | undefined; selectedRouteId: string | "all"; setSelectedRouteId: (id: string | "all") => void; onBusClick: (bus: Bus) => void; now: number; isLoading: boolean; reconnecting: boolean; }) {
   return <div className="relative min-h-[calc(100vh-5rem)] md:min-h-screen">
     <div className="absolute inset-0 map-grid opacity-85" />
     <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_49%,color-mix(in_oklab,var(--map-road)_40%,transparent)_50%,transparent_51%)] opacity-60" />
@@ -127,5 +139,5 @@ function AboutView() { return <section className="mx-auto max-w-xl px-5 py-7 md:
 function Legend({ color, text }: { color: string; text: string }) { return <div className="flex items-center gap-3"><span className={`size-3 rounded-full ${color}`} /><span>{text}</span></div>; }
 function StatusBadge({ status }: { status: ReturnType<typeof getStatus> }) { const color = status === "live" ? "bg-live" : status === "delayed" ? "bg-delayed" : "bg-offline"; return <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold"><span className={`size-1.5 rounded-full ${color}`} />{statusLabel[status]}</span>; }
 function MobileNav({ tab, setTab }: { tab: Tab; setTab: (tab: Tab) => void }) { const entries: Array<{ id: Tab; label: string; icon: typeof MapPinned }> = [{ id: "map", label: "Map", icon: MapPinned }, { id: "routes", label: "Routes", icon: RouteIcon }, { id: "buses", label: "Buses", icon: BusFront }, { id: "about", label: "Help", icon: CircleHelp }]; return <nav className="fixed inset-x-0 bottom-0 z-40 flex h-20 border-t border-border bg-card md:hidden">{entries.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => setTab(id)} className={`flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-bold ${tab === id ? "text-primary" : "text-muted-foreground"}`}><Icon size={19} strokeWidth={tab === id ? 2.5 : 1.8} />{label}</button>)}</nav>; }
-function BusDrawer({ bus, route, now, onOpenChange }: { bus: Bus | null; route?: RouteInfo; now: number; onOpenChange: (open: boolean) => void }) { const status = getStatus(bus?.location?.received_at, now); return <Drawer open={Boolean(bus)} onOpenChange={onOpenChange}><DrawerContent><DrawerHeader className="px-6 pb-6 text-left"><div className="flex items-start justify-between gap-4"><div><DrawerTitle className="font-display text-2xl font-extrabold">{bus?.bus_code ?? "Bus"}</DrawerTitle><DrawerDescription className="mt-1">{route?.name ?? "Public service"} · {bus?.plate_number}</DrawerDescription></div><StatusBadge status={status} /></div><div className="mt-6 grid grid-cols-3 gap-3"><Metric icon={<Clock3 size={16} />} label="Last update" value={formatUpdate(bus?.location?.received_at, now)} /><Metric icon={<Navigation size={16} />} label="Speed" value={bus?.location ? `${Math.round(bus.location.speed_kmh)} km/h` : "—"} /><Metric icon={<MapPinned size={16} />} label="Next stop" value={route?.stops[1]?.name ?? "—"} /></div>{status === "offline" && <p className="mt-5 rounded-md bg-muted px-3 py-2 text-xs font-medium text-muted-foreground"><WifiOff className="mr-1 inline size-3.5" /> Last known position</p>}</DrawerHeader></DrawerContent></Drawer>; }
+function BusDrawer({ bus, route, now, onOpenChange }: { bus: Bus | null; route: RouteInfo | undefined; now: number; onOpenChange: (open: boolean) => void }) { const status = getStatus(bus?.location?.received_at, now); return <Drawer open={Boolean(bus)} onOpenChange={onOpenChange}><DrawerContent><DrawerHeader className="px-6 pb-6 text-left"><div className="flex items-start justify-between gap-4"><div><DrawerTitle className="font-display text-2xl font-extrabold">{bus?.bus_code ?? "Bus"}</DrawerTitle><DrawerDescription className="mt-1">{route?.name ?? "Public service"} · {bus?.plate_number}</DrawerDescription></div><StatusBadge status={status} /></div><div className="mt-6 grid grid-cols-3 gap-3"><Metric icon={<Clock3 size={16} />} label="Last update" value={formatUpdate(bus?.location?.received_at, now)} /><Metric icon={<Navigation size={16} />} label="Speed" value={bus?.location ? `${Math.round(bus.location.speed_kmh)} km/h` : "—"} /><Metric icon={<MapPinned size={16} />} label="Next stop" value={route?.stops[1]?.name ?? "—"} /></div>{status === "offline" && <p className="mt-5 rounded-md bg-muted px-3 py-2 text-xs font-medium text-muted-foreground"><WifiOff className="mr-1 inline size-3.5" /> Last known position</p>}</DrawerHeader></DrawerContent></Drawer>; }
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) { return <div className="rounded-md bg-muted p-3"><span className="text-blue-mid">{icon}</span><p className="mt-2 text-[10px] font-bold uppercase tracking-[.08em] text-muted-foreground">{label}</p><p className="mt-1 text-xs font-bold leading-4 text-foreground">{value}</p></div>; }
