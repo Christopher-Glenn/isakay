@@ -22,8 +22,10 @@ export const Route = createFileRoute("/api/public/update-location")({
         const { data: bus } = await supabaseAdmin.from("buses").select("id,bus_code").eq("bus_code", busCode).maybeSingle();
         if (!bus) return json({ error: "unknown_bus" }, 404);
 
+        const latitude = typeof body.lat === "number" ? body.lat : null;
+        const longitude = typeof body.lng === "number" ? body.lng : null;
         const log = async (httpStatus: number) => {
-          await supabaseAdmin.from("gps_request_logs").insert({ bus_id: bus.id, bus_code: bus.bus_code, http_status: httpStatus, lat: body.lat, lng: body.lng });
+          await supabaseAdmin.from("gps_request_logs").insert({ bus_id: bus.id, bus_code: bus.bus_code, http_status: httpStatus, lat: latitude, lng: longitude });
         };
         const suppliedToken = request.headers.get("x-device-token");
         if (!suppliedToken) { await log(401); return json({ error: "unauthorized" }, 401); }
@@ -35,8 +37,8 @@ export const Route = createFileRoute("/api/public/update-location")({
         if (!shouldIgnoreOlderGpsTime(stored?.gps_time, stored?.received_at, gpsTime)) {
           const { error } = await supabaseAdmin.from("bus_locations").upsert({
             bus_id: bus.id,
-            lat: body.lat,
-            lng: body.lng,
+            lat: latitude ?? 0,
+            lng: longitude ?? 0,
             speed_kmh: typeof body.speed_kmh === "number" && Number.isFinite(body.speed_kmh) ? body.speed_kmh : 0,
             heading: typeof body.heading === "number" && Number.isFinite(body.heading) ? body.heading : 0,
             satellites: typeof body.satellites === "number" && Number.isInteger(body.satellites) && body.satellites >= 0 ? body.satellites : 0,
