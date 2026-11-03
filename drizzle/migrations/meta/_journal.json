@@ -8,6 +8,13 @@
       "when": 1793689898651,
       "tag": "0000_create_ebus_tracker_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793690729611,
+      "tag": "0001_allow_claim_admin_access",
+      "breakpoints": true
     }
   ]
 }
