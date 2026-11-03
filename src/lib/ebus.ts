@@ -60,6 +60,19 @@ export const formatUpdate = (receivedAt: string | undefined, now = Date.now()) =
   return `Updated ${Math.floor(seconds / 60)} min ago`;
 };
 
+type Coordinates = { lat: number; lng: number };
+
+export const estimatedArrivalMinutes = (bus: Coordinates | undefined, rider: Coordinates | null, speedKmh: number | undefined) => {
+  if (!bus || !rider || !speedKmh || speedKmh <= 0) return null;
+  const toRadians = (value: number) => value * Math.PI / 180;
+  const earthRadiusKm = 6371;
+  const latitudeDifference = toRadians(rider.lat - bus.lat);
+  const longitudeDifference = toRadians(rider.lng - bus.lng);
+  const haversine = Math.sin(latitudeDifference / 2) ** 2 + Math.cos(toRadians(bus.lat)) * Math.cos(toRadians(rider.lat)) * Math.sin(longitudeDifference / 2) ** 2;
+  const distanceKm = earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+  return Math.max(1, Math.ceil(distanceKm / speedKmh * 60));
+};
+
 export const statusLabel: Record<TrackerStatus, string> = {
   live: "Live",
   delayed: "Delayed",
