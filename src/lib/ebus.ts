@@ -16,7 +16,6 @@ export type RouteInfo = {
   start_terminal: string;
   end_terminal: string;
   path: Array<[number, number]>;
-  stops: Stop[];
 };
 
 export type Bus = {
@@ -67,7 +66,3 @@ export const statusLabel: Record<TrackerStatus, string> = {
   offline: "Offline",
 };
 
-export const nearestUpcomingStop = (route: RouteInfo | undefined, bus: Bus) => {
-  if (!route || !bus.location) return undefined;
-  return route.stops.find((stop) => stop.sequence > 0) ?? route.stops.at(-1);
-};
