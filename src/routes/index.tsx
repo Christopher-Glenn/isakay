@@ -1,14 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, BusFront, ChevronRight, CircleHelp, Clock3, LocateFixed, MapPin, MapPinned, Navigation, Route as RouteIcon, Search, UserRound, WifiOff } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { LiveMap } from "@/components/live-map";
 import { type Bus, type RouteInfo, formatUpdate, getStatus, statusLabel } from "@/lib/ebus";
 
 type Tab = "map" | "routes" | "buses" | "about";
+const LiveMap = lazy(() => import("@/components/live-map").then((module) => ({ default: module.LiveMap })));
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -179,8 +179,8 @@ const fallbackBus: Bus = {
 };
 
 function MapView({ riderName, routes, buses, selectedRoute, selectedRouteId, setSelectedRouteId, onBusClick, now, isLoading, reconnecting, riderLocation, locationMessage, onRequestLocation }: { riderName: string; routes: RouteInfo[]; buses: Bus[]; selectedRoute: RouteInfo | undefined; selectedRouteId: string | "all"; setSelectedRouteId: (id: string | "all") => void; onBusClick: (bus: Bus) => void; now: number; isLoading: boolean; reconnecting: boolean; riderLocation: { lat: number; lng: number } | null; locationMessage: string | null; onRequestLocation: () => void; }) {
-  return <div className="relative min-h-[calc(100vh-5rem)] md:min-h-screen">
-    <div className="absolute inset-0"><LiveMap buses={buses} path={selectedRoute?.path ?? []} riderLocation={riderLocation} onBusClick={onBusClick} /></div>
+    <div className="relative min-h-[calc(100vh-5rem)] md:min-h-screen">
+     <div className="absolute inset-0"><Suspense fallback={<div className="h-full w-full bg-map-land" />}><LiveMap buses={buses} path={selectedRoute?.path ?? []} riderLocation={riderLocation} onBusClick={onBusClick} /></Suspense></div>
      <header className="relative z-20 flex items-center justify-between px-5 pt-5 md:px-9 md:pt-8"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-md bg-blue-deep text-primary-foreground shadow-lg md:hidden"><BusFront size={21} /></span><div><p className="font-display text-lg font-extrabold text-blue-deep md:text-2xl">Your bus is on the way, {riderName}</p><p className="text-xs font-medium text-muted-foreground">Iloilo City electric buses</p></div></div><span className="rounded-full bg-card px-3 py-2 text-xs font-bold shadow-sm"><span className="mr-1.5 inline-block size-2 rounded-full bg-live status-pulse" />Live tracking</span></header>
     <div className="relative z-20 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 md:px-9"> <FilterButton active={selectedRouteId === "all"} onClick={() => setSelectedRouteId("all")}>All buses</FilterButton>{routes.map((route) => <FilterButton key={route.id} active={selectedRouteId === route.id} onClick={() => setSelectedRouteId(route.id)}>{route.name}</FilterButton>)}</div>
     <div className="relative z-20 mt-3 px-5 md:px-9"><Button type="button" variant="secondary" size="sm" onClick={onRequestLocation} className="gap-2"><LocateFixed size={16} />{riderLocation ? "Update my location" : "Use my location"}</Button>{locationMessage && <p className="mt-2 text-xs font-semibold text-muted-foreground">{locationMessage}</p>}</div>
