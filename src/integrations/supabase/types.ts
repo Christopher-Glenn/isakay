@@ -14,13 +14,234 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admins: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          key: string
+          value: string
+        }
+        Insert: {
+          key: string
+          value: string
+        }
+        Update: {
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      bus_locations: {
+        Row: {
+          bus_id: string
+          gps_time: string
+          heading: number
+          lat: number
+          lng: number
+          received_at: string
+          satellites: number
+          speed_kmh: number
+        }
+        Insert: {
+          bus_id: string
+          gps_time: string
+          heading?: number
+          lat: number
+          lng: number
+          received_at?: string
+          satellites?: number
+          speed_kmh?: number
+        }
+        Update: {
+          bus_id?: string
+          gps_time?: string
+          heading?: number
+          lat?: number
+          lng?: number
+          received_at?: string
+          satellites?: number
+          speed_kmh?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_locations_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: true
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bus_stops: {
+        Row: {
+          id: string
+          is_terminal: boolean
+          lat: number
+          lng: number
+          name: string
+          route_id: string
+          sequence: number
+        }
+        Insert: {
+          id?: string
+          is_terminal?: boolean
+          lat: number
+          lng: number
+          name: string
+          route_id: string
+          sequence: number
+        }
+        Update: {
+          id?: string
+          is_terminal?: boolean
+          lat?: number
+          lng?: number
+          name?: string
+          route_id?: string
+          sequence?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buses: {
+        Row: {
+          bus_code: string
+          created_at: string
+          id: string
+          is_public: boolean
+          plate_number: string
+          route_id: string | null
+        }
+        Insert: {
+          bus_code: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          plate_number?: string
+          route_id?: string | null
+        }
+        Update: {
+          bus_code?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          plate_number?: string
+          route_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buses_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gps_devices: {
+        Row: {
+          bus_id: string | null
+          created_at: string
+          device_code: string
+          id: string
+          last_seen: string | null
+          token_hash: string
+        }
+        Insert: {
+          bus_id?: string | null
+          created_at?: string
+          device_code: string
+          id?: string
+          last_seen?: string | null
+          token_hash?: string
+        }
+        Update: {
+          bus_id?: string | null
+          created_at?: string
+          device_code?: string
+          id?: string
+          last_seen?: string | null
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_devices_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: true
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routes: {
+        Row: {
+          created_at: string
+          description: string
+          end_terminal: string
+          id: string
+          is_active: boolean
+          name: string
+          path: Json
+          start_terminal: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          end_terminal: string
+          id?: string
+          is_active?: boolean
+          name: string
+          path?: Json
+          start_terminal: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          end_terminal?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          path?: Json
+          start_terminal?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_admin: { Args: never; Returns: boolean }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
