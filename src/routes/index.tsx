@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BusFront, ChevronRight, CircleHelp, Clock3, LocateFixed, MapPinned, Navigation, Route as RouteIcon, WifiOff } from "lucide-react";
+import { ArrowLeft, BusFront, ChevronRight, CircleHelp, Clock3, LocateFixed, MapPin, MapPinned, Navigation, Route as RouteIcon, Search, UserRound, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Input } from "@/components/ui/input";
 import { LiveMap } from "@/components/live-map";
 import { type Bus, type RouteInfo, formatUpdate, getStatus, statusLabel } from "@/lib/ebus";
 
@@ -25,6 +26,9 @@ export const Route = createFileRoute("/")({
 
 function Tracker() {
   const [tab, setTab] = useState<Tab>("map");
+  const [screen, setScreen] = useState<"welcome" | "search" | "tracker">("welcome");
+  const [riderName, setRiderName] = useState("");
+  const [destination, setDestination] = useState("");
   const [routes, setRoutes] = useState<RouteInfo[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string | "all">("all");
@@ -112,11 +116,19 @@ function Tracker() {
     );
   };
 
+  if (screen === "welcome") {
+    return <WelcomeView riderName={riderName} onNameChange={setRiderName} onContinue={() => setScreen("search")} />;
+  }
+
+  if (screen === "search") {
+    return <TripSearchView riderName={riderName} destination={destination} onDestinationChange={setDestination} buses={buses} selectedBusId={selectedBus?.id ?? ""} onSelectBus={(bus) => setSelectedBus(bus)} riderLocation={riderLocation} locationMessage={locationMessage} onRequestLocation={requestRiderLocation} onBack={() => setScreen("welcome")} onSearch={() => { if (destination.trim() && selectedBus) { setSelectedRouteId(selectedBus.route_id ?? "all"); setTab("map"); setScreen("tracker"); } }} />;
+  }
+
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
       <section className="mx-auto min-h-screen max-w-6xl md:grid md:grid-cols-[1fr_380px] md:gap-0">
         <div className="relative overflow-hidden bg-card md:min-h-screen">
-          {tab === "map" && <MapView routes={routes} buses={visibleBuses} selectedRoute={selectedRoute} selectedRouteId={selectedRouteId} setSelectedRouteId={setSelectedRouteId} onBusClick={setSelectedBus} now={now} isLoading={isLoading} reconnecting={reconnecting} riderLocation={riderLocation} locationMessage={locationMessage} onRequestLocation={requestRiderLocation} />}
+           {tab === "map" && <MapView riderName={riderName} routes={routes} buses={visibleBuses} selectedRoute={selectedRoute} selectedRouteId={selectedRouteId} setSelectedRouteId={setSelectedRouteId} onBusClick={setSelectedBus} now={now} isLoading={isLoading} reconnecting={reconnecting} riderLocation={riderLocation} locationMessage={locationMessage} onRequestLocation={requestRiderLocation} />}
           {tab === "routes" && <RoutesView routes={routes} onSelect={(route) => { setSelectedRouteId(route.id); setTab("map"); }} />}
           {tab === "buses" && <BusesView buses={buses} routes={routes} onSelect={setSelectedBus} now={now} />}
           {tab === "about" && <AboutView />}
@@ -132,6 +144,20 @@ function Tracker() {
       <BusDrawer bus={selectedBus} route={routes.find((route) => route.id === selectedBus?.route_id)} now={now} onOpenChange={(open) => !open && setSelectedBus(null)} />
     </main>
   );
+}
+
+function WelcomeView({ riderName, onNameChange, onContinue }: { riderName: string; onNameChange: (name: string) => void; onContinue: () => void }) {
+  return <main className="min-h-screen bg-blue-deep px-5 py-6 text-primary-foreground sm:grid sm:place-items-center">
+    <section className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md flex-col justify-between overflow-hidden rounded-md bg-card text-card-foreground shadow-xl sm:min-h-[42rem]">
+      <div className="bg-blue-deep px-7 pb-12 pt-10 text-primary-foreground"><span className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground"><BusFront size={25} /></span><p className="mt-10 text-sm font-bold uppercase tracking-[.14em] text-primary-foreground/75">Iloilo City</p><h1 className="mt-2 font-display text-4xl font-extrabold">Let’s get you moving.</h1><p className="mt-3 max-w-xs text-sm leading-6 text-primary-foreground/80">Find the live bus you plan to ride before you leave.</p></div>
+      <form className="px-7 py-8" onSubmit={(event) => { event.preventDefault(); if (riderName.trim()) onContinue(); }}><label htmlFor="rider-name" className="text-sm font-extrabold">What’s your name?</label><div className="relative mt-3"><UserRound className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" /><Input id="rider-name" value={riderName} onChange={(event) => onNameChange(event.target.value)} placeholder="Enter your name" autoFocus className="h-14 border-border bg-muted pl-12 text-base" /></div><Button type="submit" className="mt-5 h-14 w-full gap-2 text-base" disabled={!riderName.trim()}>Continue <ChevronRight size={19} /></Button></form>
+      <p className="px-7 pb-7 text-center text-xs leading-5 text-muted-foreground">Your name stays on this device and is only used to personalize your trip search.</p>
+    </section>
+  </main>;
+}
+
+function TripSearchView({ riderName, destination, onDestinationChange, buses, selectedBusId, onSelectBus, riderLocation, locationMessage, onRequestLocation, onBack, onSearch }: { riderName: string; destination: string; onDestinationChange: (destination: string) => void; buses: Bus[]; selectedBusId: string; onSelectBus: (bus: Bus) => void; riderLocation: { lat: number; lng: number } | null; locationMessage: string | null; onRequestLocation: () => void; onBack: () => void; onSearch: () => void }) {
+  return <main className="min-h-screen bg-background px-5 py-6 sm:grid sm:place-items-center"><section className="mx-auto w-full max-w-md"><Button type="button" variant="ghost" size="icon" aria-label="Go back" onClick={onBack}><ArrowLeft size={20} /></Button><div className="mt-7 overflow-hidden rounded-md bg-card shadow-xl"><header className="bg-blue-deep px-7 pb-9 pt-8 text-primary-foreground"><p className="text-lg font-bold">Hi {riderName},</p><h1 className="mt-2 font-display text-3xl font-extrabold">Where are you going?</h1><p className="mt-2 text-sm text-primary-foreground/80">Choose a destination, then your bus.</p></header><form className="p-6" onSubmit={(event) => { event.preventDefault(); onSearch(); }}><label htmlFor="destination" className="text-sm font-extrabold">Your destination</label><div className="relative mt-2"><MapPin className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-primary" /><Input id="destination" value={destination} onChange={(event) => onDestinationChange(event.target.value)} placeholder="e.g. SM City Iloilo" className="h-14 bg-muted pl-12 text-base" /></div><Button type="button" variant="secondary" className="mt-3 h-11 w-full justify-start gap-2" onClick={onRequestLocation}><LocateFixed size={17} />{riderLocation ? "Current location is ready" : "Allow current location"}</Button>{locationMessage && <p className="mt-2 text-xs font-medium text-muted-foreground">{locationMessage}</p>}<div className="mt-7"><p className="text-sm font-extrabold">Which bus will you ride?</p><p className="mt-1 text-xs text-muted-foreground">Select a public bus to see its latest location.</p><div className="mt-3 space-y-2">{buses.map((bus) => <Button key={bus.id} type="button" variant={selectedBusId === bus.id ? "default" : "secondary"} className="h-auto w-full justify-between px-4 py-4 text-left" onClick={() => onSelectBus(bus)}><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-md bg-card/15"><BusFront size={18} /></span><span><span className="block font-bold">{bus.bus_code}</span><span className="mt-0.5 block text-xs opacity-80">{bus.plate_number}</span></span></span><ChevronRight size={18} /></Button>)}</div></div><Button type="submit" className="mt-7 h-14 w-full gap-2 text-base" disabled={!destination.trim() || !selectedBusId}><Search size={18} />Search live bus</Button></form></div></section></main>;
 }
 
 const fallbackRoute: RouteInfo = {
@@ -152,10 +178,10 @@ const fallbackBus: Bus = {
   location: { lat: 10.693758, lng: 122.546383, speed_kmh: 24, heading: 32, satellites: 10, gps_time: new Date().toISOString(), received_at: new Date().toISOString() },
 };
 
-function MapView({ routes, buses, selectedRoute, selectedRouteId, setSelectedRouteId, onBusClick, now, isLoading, reconnecting, riderLocation, locationMessage, onRequestLocation }: { routes: RouteInfo[]; buses: Bus[]; selectedRoute: RouteInfo | undefined; selectedRouteId: string | "all"; setSelectedRouteId: (id: string | "all") => void; onBusClick: (bus: Bus) => void; now: number; isLoading: boolean; reconnecting: boolean; riderLocation: { lat: number; lng: number } | null; locationMessage: string | null; onRequestLocation: () => void; }) {
+function MapView({ riderName, routes, buses, selectedRoute, selectedRouteId, setSelectedRouteId, onBusClick, now, isLoading, reconnecting, riderLocation, locationMessage, onRequestLocation }: { riderName: string; routes: RouteInfo[]; buses: Bus[]; selectedRoute: RouteInfo | undefined; selectedRouteId: string | "all"; setSelectedRouteId: (id: string | "all") => void; onBusClick: (bus: Bus) => void; now: number; isLoading: boolean; reconnecting: boolean; riderLocation: { lat: number; lng: number } | null; locationMessage: string | null; onRequestLocation: () => void; }) {
   return <div className="relative min-h-[calc(100vh-5rem)] md:min-h-screen">
     <div className="absolute inset-0"><LiveMap buses={buses} path={selectedRoute?.path ?? []} riderLocation={riderLocation} onBusClick={onBusClick} /></div>
-    <header className="relative z-20 flex items-center justify-between px-5 pt-5 md:px-9 md:pt-8"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-md bg-blue-deep text-primary-foreground shadow-lg md:hidden"><BusFront size={21} /></span><div><p className="font-display text-lg font-extrabold text-blue-deep md:text-2xl">Where are you going?</p><p className="text-xs font-medium text-muted-foreground">Iloilo City electric buses</p></div></div><span className="rounded-full bg-card px-3 py-2 text-xs font-bold shadow-sm"><span className="mr-1.5 inline-block size-2 rounded-full bg-live status-pulse" />Live tracking</span></header>
+     <header className="relative z-20 flex items-center justify-between px-5 pt-5 md:px-9 md:pt-8"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-md bg-blue-deep text-primary-foreground shadow-lg md:hidden"><BusFront size={21} /></span><div><p className="font-display text-lg font-extrabold text-blue-deep md:text-2xl">Your bus is on the way, {riderName}</p><p className="text-xs font-medium text-muted-foreground">Iloilo City electric buses</p></div></div><span className="rounded-full bg-card px-3 py-2 text-xs font-bold shadow-sm"><span className="mr-1.5 inline-block size-2 rounded-full bg-live status-pulse" />Live tracking</span></header>
     <div className="relative z-20 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 md:px-9"> <FilterButton active={selectedRouteId === "all"} onClick={() => setSelectedRouteId("all")}>All buses</FilterButton>{routes.map((route) => <FilterButton key={route.id} active={selectedRouteId === route.id} onClick={() => setSelectedRouteId(route.id)}>{route.name}</FilterButton>)}</div>
     <div className="relative z-20 mt-3 px-5 md:px-9"><Button type="button" variant="secondary" size="sm" onClick={onRequestLocation} className="gap-2"><LocateFixed size={16} />{riderLocation ? "Update my location" : "Use my location"}</Button>{locationMessage && <p className="mt-2 text-xs font-semibold text-muted-foreground">{locationMessage}</p>}</div>
     {isLoading && <div className="absolute inset-0 z-10 grid place-items-center"><div className="rounded-md bg-card px-4 py-3 text-sm font-bold shadow-lg">Loading buses…</div></div>}
