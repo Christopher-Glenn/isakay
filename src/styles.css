@@ -98,6 +98,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
   animation: statusPulse 2s ease-in-out infinite;
 }
 
+.leaflet-container { background: var(--map-land); font-family: var(--font-body); }
+.leaflet-control-attribution { font-size: 9px; }
+.live-map-bus { display: grid; width: 42px; height: 42px; place-items: center; border: 3px solid var(--card); border-radius: 999px; background: var(--blue-deep); box-shadow: 0 6px 14px color-mix(in oklab, var(--blue-deep) 35%, transparent); font-size: 20px; }
+.live-map-rider { display: block; width: 20px; height: 20px; box-sizing: border-box; border: 4px solid var(--card); border-radius: 999px; background: var(--primary); box-shadow: 0 2px 8px color-mix(in oklab, var(--blue-deep) 45%, transparent); }
+
 @keyframes statusPulse {
   50% { transform: scale(1.16); opacity: .65; }
 }
