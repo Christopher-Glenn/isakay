@@ -202,6 +202,44 @@ export type Database = {
           },
         ]
       }
+      gps_request_logs: {
+        Row: {
+          bus_code: string | null
+          bus_id: string | null
+          http_status: number
+          id: string
+          lat: number | null
+          lng: number | null
+          received_at: string
+        }
+        Insert: {
+          bus_code?: string | null
+          bus_id?: string | null
+          http_status: number
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          received_at?: string
+        }
+        Update: {
+          bus_code?: string | null
+          bus_id?: string | null
+          http_status?: number
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          received_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gps_request_logs_bus_id_fkey"
+            columns: ["bus_id"]
+            isOneToOne: false
+            referencedRelation: "buses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       routes: {
         Row: {
           created_at: string
