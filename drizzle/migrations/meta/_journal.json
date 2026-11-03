@@ -15,6 +15,13 @@
       "when": 1793690729611,
       "tag": "0001_allow_claim_admin_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793691538268,
+      "tag": "0002_add_gps_request_audit_log",
+      "breakpoints": true
     }
   ]
 }
