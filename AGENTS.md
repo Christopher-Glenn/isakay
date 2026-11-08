@@ -14,3 +14,4 @@
 - GPS updates are accepted only by the public update-location server endpoint using a per-device SHA-256 token hash; no GPS token is exposed in the passenger app or administrator logs.
 - The passenger tracker treats bus movement as continuous around Iloilo and does not display fixed bus stops; the rider's optional browser location stays only in that browser session.
 - Keep the public passenger journey behind a name and trip-selection flow; reveal live bus tracking only after the rider selects a destination and a bus.
+- Keep Route 10’s passenger destination picker based on named Iloilo service locations, with the rider confirming a map pin before live tracking.
