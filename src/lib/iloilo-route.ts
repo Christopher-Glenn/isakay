@@ -1,6 +1,7 @@
 export type DestinationPlace = { name: string; lat: number; lng: number };
 
 export const route10Name = "Route 10: Tagbak Terminal - Iloilo City Proper Loop";
+export const route10Color = "orange" as const;
 
 export const route10Destinations: DestinationPlace[] = [
   { name: "Tagbak Terminal", lat: 10.761919, lng: 122.577802 },

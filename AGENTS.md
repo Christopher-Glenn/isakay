@@ -16,3 +16,4 @@
 - Keep the public passenger journey behind a name and trip-selection flow; reveal live bus tracking only after the rider selects a destination and a bus.
 - Keep Route 10’s passenger destination picker based on named Iloilo service locations, with the rider confirming a map pin before live tracking.
 - Approved administrators can replace a route path only through the protected database action, so public map updates remain controlled.
+- Public passenger route presentation keeps a client-side colour field per active route; Route 10 uses orange so it stays legible on dark map tiles.

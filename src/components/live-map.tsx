@@ -2,40 +2,49 @@ import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import { MapContainer, Marker, Polyline, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import type { Bus } from "@/lib/ebus";
+import type { Bus, TrackerStatus } from "@/lib/ebus";
 import type { DestinationPlace } from "@/lib/iloilo-route";
 
 type Coordinates = { lat: number; lng: number };
+type MapTheme = "dark" | "light";
 
 function CenterOnLocation({ location }: { location: Coordinates | null }) {
   const map = useMap();
   const previous = useRef<Coordinates | null>(null);
-
   useEffect(() => {
     if (!location || (previous.current?.lat === location.lat && previous.current?.lng === location.lng)) return;
     previous.current = location;
     map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), 15), { duration: 0.8 });
   }, [location, map]);
-
   return null;
 }
 
-const busIcon = L.divIcon({
+function FitRoute({ path }: { path: Array<[number, number]> }) {
+  const map = useMap();
+  const fitted = useRef(false);
+  useEffect(() => {
+    if (fitted.current || path.length < 2) return;
+    fitted.current = true;
+    map.fitBounds(L.latLngBounds(path), { padding: [35, 35] });
+  }, [map, path]);
+  return null;
+}
+
+const busIcon = (heading: number, status: TrackerStatus) => L.divIcon({
   className: "",
-  html: '<span class="live-map-bus" aria-hidden="true"><span class="live-map-bus-roof"></span><span class="live-map-bus-window"></span><span class="live-map-bus-window"></span><span class="live-map-bus-wheel live-map-bus-wheel-left"></span><span class="live-map-bus-wheel live-map-bus-wheel-right"></span></span>',
-  iconSize: [48, 48],
-  iconAnchor: [24, 24],
+  html: `<span class="live-map-bus live-map-bus-${status}" style="transform:rotate(${heading}deg)" aria-hidden="true"><span class="live-map-bus-body">▰</span></span>`,
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
 });
 
-const riderIcon = L.divIcon({
-  className: "",
-  html: '<span class="live-map-rider" aria-hidden="true"></span>',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
-});
-
+const riderIcon = L.divIcon({ className: "", html: '<span class="live-map-rider" aria-hidden="true"></span>', iconSize: [20, 20], iconAnchor: [10, 10] });
 const destinationIcon = L.divIcon({ className: "", html: '<span class="live-map-destination" aria-hidden="true"></span>', iconSize: [28, 36], iconAnchor: [14, 36] });
-const arrowIcon = (heading: number) => L.divIcon({ className: "", html: `<span class="live-map-route-arrow" style="transform: rotate(${heading}deg)" aria-hidden="true">➤</span>`, iconSize: [18, 18], iconAnchor: [9, 9] });
+const stopIcon = (terminal: boolean) => L.divIcon({
+  className: "",
+  html: `<span class="${terminal ? "live-map-terminal" : "live-map-stop"}" aria-hidden="true">${terminal ? "⚑" : ""}</span>`,
+  iconSize: terminal ? [28, 28] : [14, 14],
+  iconAnchor: terminal ? [14, 24] : [7, 7],
+});
 
 function MapPicker({ onPick }: { onPick: (location: Coordinates) => void }) {
   useMapEvents({ click: (event) => onPick({ lat: event.latlng.lat, lng: event.latlng.lng }) });
@@ -48,23 +57,27 @@ function MapRecenter({ location }: { location: Coordinates | null }) {
   return null;
 }
 
-export function LiveMap({ buses, path, riderLocation, onBusClick }: { buses: Bus[]; path: Array<[number, number]>; riderLocation: Coordinates | null; onBusClick: (bus: Bus) => void }) {
+const tiles = {
+  dark: { url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", attribution: "© OpenStreetMap contributors © CARTO" },
+  light: { url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "© OpenStreetMap contributors" },
+};
+
+export function LiveMap({ buses, path, stops, riderLocation, onBusClick, theme, routeColor, statusForBus }: { buses: Bus[]; path: Array<[number, number]>; stops: DestinationPlace[]; riderLocation: Coordinates | null; onBusClick: (bus: Bus) => void; theme: MapTheme; routeColor: string; statusForBus: (bus: Bus) => TrackerStatus }) {
   const fallbackCenter: [number, number] = [10.72, 122.565];
   const coordinates = path.map(([lat, lng]) => [lat, lng] as [number, number]);
-
-  return (
-    <MapContainer center={fallbackCenter} zoom={12.5} scrollWheelZoom zoomControl={false} className="h-full w-full" aria-label="Live bus map">
-      <ZoomControl position="bottomright" />
-      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      {coordinates.length > 1 && <Polyline positions={coordinates} pathOptions={{ color: "var(--primary)", weight: 5, opacity: 0.9 }} />}
-      {coordinates.slice(1, -1).filter((_, index) => index % 2 === 0).map((point, index) => <Marker key={`${point[0]}-${point[1]}`} position={point} icon={arrowIcon(index % 2 ? 45 : 10)} interactive={false} />)}
-      {riderLocation && <><CenterOnLocation location={riderLocation} /><Marker position={[riderLocation.lat, riderLocation.lng]} icon={riderIcon}><Tooltip permanent direction="bottom" offset={[0, 12]}>You are here</Tooltip></Marker></>}
-      {buses.filter((bus) => bus.location).map((bus) => bus.location && <Marker key={bus.id} position={[bus.location.lat, bus.location.lng]} icon={busIcon} eventHandlers={{ click: () => onBusClick(bus) }}><Tooltip direction="top" offset={[0, -18]}>{bus.bus_code}</Tooltip></Marker>)}
-    </MapContainer>
-  );
+  const tile = tiles[theme];
+  return <MapContainer center={fallbackCenter} zoom={12.5} scrollWheelZoom zoomControl={false} className="h-full w-full" aria-label="Live bus map">
+    <ZoomControl position="bottomright" />
+    <TileLayer key={theme} attribution={tile.attribution} url={tile.url} />
+    <FitRoute path={coordinates} />
+    {coordinates.length > 1 && <><Polyline positions={coordinates} pathOptions={{ color: "var(--route-outline)", weight: 8, opacity: 0.9, lineCap: "round", lineJoin: "round" }} /><Polyline positions={coordinates} pathOptions={{ color: routeColor, weight: 6, opacity: 1, lineCap: "round", lineJoin: "round" }} /></>}
+    {stops.map((stop, index) => <Marker key={`${stop.name}-${index}`} position={[stop.lat, stop.lng]} icon={stopIcon(index === 0)}><Tooltip direction="top" offset={[0, -8]}>{stop.name}</Tooltip></Marker>)}
+    {riderLocation && <><CenterOnLocation location={riderLocation} /><Marker position={[riderLocation.lat, riderLocation.lng]} icon={riderIcon}><Tooltip direction="top" offset={[0, -12]}>Current location</Tooltip></Marker></>}
+    {buses.filter((bus) => bus.location).map((bus) => bus.location && <Marker key={bus.id} position={[bus.location.lat, bus.location.lng]} icon={busIcon(bus.location.heading, statusForBus(bus))} eventHandlers={{ click: () => onBusClick(bus) }}><Tooltip direction="top" offset={[0, -18]}>{bus.bus_code}</Tooltip></Marker>)}
+  </MapContainer>;
 }
 
 export function DestinationPickerMap({ places, selectedLocation, onPick }: { places: DestinationPlace[]; selectedLocation: Coordinates | null; onPick: (location: Coordinates) => void }) {
   const center = useMemo<[number, number]>(() => selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : [10.7132, 122.5605], [selectedLocation]);
-  return <MapContainer center={center} zoom={13} scrollWheelZoom zoomControl={false} className="h-full w-full" aria-label="Choose destination on map"><ZoomControl position="bottomright" /><TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /><MapPicker onPick={onPick} /><MapRecenter location={selectedLocation} />{places.map((place) => <Marker key={place.name} position={[place.lat, place.lng]} icon={destinationIcon} eventHandlers={{ click: () => onPick(place) }}><Tooltip direction="top">{place.name}</Tooltip></Marker>)}{selectedLocation && <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={destinationIcon} />}</MapContainer>;
+  return <MapContainer center={center} zoom={13} scrollWheelZoom zoomControl={false} className="h-full w-full" aria-label="Choose destination on map"><ZoomControl position="bottomright" /><TileLayer attribution="© OpenStreetMap contributors © CARTO" url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" /><MapPicker onPick={onPick} /><MapRecenter location={selectedLocation} />{places.map((place, index) => <Marker key={`${place.name}-${index}`} position={[place.lat, place.lng]} icon={destinationIcon} eventHandlers={{ click: () => onPick(place) }}><Tooltip direction="top">{place.name}</Tooltip></Marker>)}{selectedLocation && <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={destinationIcon} />}</MapContainer>;
 }

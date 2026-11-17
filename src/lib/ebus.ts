@@ -16,6 +16,7 @@ export type RouteInfo = {
   start_terminal: string;
   end_terminal: string;
   path: Array<[number, number]>;
+  color?: "orange" | "blue" | "green" | "purple";
 };
 
 export type Bus = {
@@ -77,5 +78,23 @@ export const statusLabel: Record<TrackerStatus, string> = {
   live: "Live",
   delayed: "Delayed",
   offline: "Offline",
+};
+
+export type PassengerFareType = "regular" | "discounted";
+
+export const estimatedFare = (distanceKm: number, fareType: PassengerFareType) => {
+  const firstFourKm = fareType === "regular" ? 17 : 13.5;
+  const succeedingRate = fareType === "regular" ? 2.4 : 1.92;
+  const rawFare = firstFourKm + Math.max(0, distanceKm - 4) * succeedingRate;
+  return fareType === "discounted" ? Math.round(rawFare * 4) / 4 : Math.round(rawFare * 100) / 100;
+};
+
+export const distanceInKm = (from: Coordinates, to: Coordinates) => {
+  const toRadians = (value: number) => value * Math.PI / 180;
+  const earthRadiusKm = 6371;
+  const latitudeDifference = toRadians(to.lat - from.lat);
+  const longitudeDifference = toRadians(to.lng - from.lng);
+  const haversine = Math.sin(latitudeDifference / 2) ** 2 + Math.cos(toRadians(from.lat)) * Math.cos(toRadians(to.lat)) * Math.sin(longitudeDifference / 2) ** 2;
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 };
 

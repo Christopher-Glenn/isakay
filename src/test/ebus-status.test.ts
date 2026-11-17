@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimatedArrivalMinutes, getStatus } from "@/lib/ebus";
+import { estimatedArrivalMinutes, estimatedFare, getStatus } from "@/lib/ebus";
 
 const NOW = new Date("2026-11-03T07:00:00Z").getTime();
 const at = (secondsAgo: number) => new Date(NOW - secondsAgo * 1000).toISOString();
@@ -29,5 +29,13 @@ describe("E-Bus tracking status", () => {
 
   it("estimates a nearby rider arrival time from the reported bus speed", () => {
     expect(estimatedArrivalMinutes({ lat: 10.693758, lng: 122.546383 }, { lat: 10.697459, lng: 122.546537 }, 24)).toBe(2);
+  });
+
+  it("calculates the published regular passenger fare after the first four kilometres", () => {
+    expect(estimatedFare(6, "regular")).toBe(21.8);
+  });
+
+  it("calculates the published discounted passenger fare rounded to a quarter peso", () => {
+    expect(estimatedFare(6, "discounted")).toBe(17.25);
   });
 });
