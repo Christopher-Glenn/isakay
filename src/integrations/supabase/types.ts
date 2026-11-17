@@ -280,6 +280,10 @@ export type Database = {
     Functions: {
       claim_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      update_route_path: {
+        Args: { _path: Json; _route_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

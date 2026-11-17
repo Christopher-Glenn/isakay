@@ -49,11 +49,11 @@ function MapRecenter({ location }: { location: Coordinates | null }) {
 }
 
 export function LiveMap({ buses, path, riderLocation, onBusClick }: { buses: Bus[]; path: Array<[number, number]>; riderLocation: Coordinates | null; onBusClick: (bus: Bus) => void }) {
-  const fallbackCenter: [number, number] = path[0] ?? [10.693758, 122.546383];
+  const fallbackCenter: [number, number] = [10.72, 122.565];
   const coordinates = path.map(([lat, lng]) => [lat, lng] as [number, number]);
 
   return (
-    <MapContainer center={fallbackCenter} zoom={14} scrollWheelZoom zoomControl={false} className="h-full w-full" aria-label="Live bus map">
+    <MapContainer center={fallbackCenter} zoom={12.5} scrollWheelZoom zoomControl={false} className="h-full w-full" aria-label="Live bus map">
       <ZoomControl position="bottomright" />
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       {coordinates.length > 1 && <Polyline positions={coordinates} pathOptions={{ color: "var(--primary)", weight: 5, opacity: 0.9 }} />}

@@ -14,10 +14,3 @@ export function validateGpsUpdate(body: GpsUpdatePayload) {
   const validCoordinates = typeof body.lat === "number" && Number.isFinite(body.lat) && body.lat >= -90 && body.lat <= 90 && typeof body.lng === "number" && Number.isFinite(body.lng) && body.lng >= -180 && body.lng <= 180;
   return { busCode, gpsTime, validCoordinates };
 }
-
-export function shouldIgnoreOlderGpsTime(storedGpsTime: string | undefined, storedReceivedAt: string | undefined, incomingGpsTime: Date, now = Date.now()) {
-  if (!storedGpsTime || !storedReceivedAt) return false;
-  const receivedAt = new Date(storedReceivedAt).getTime();
-  const storedAt = new Date(storedGpsTime).getTime();
-  return Number.isFinite(receivedAt) && Number.isFinite(storedAt) && now - receivedAt < 60_000 && incomingGpsTime.getTime() < storedAt;
-}

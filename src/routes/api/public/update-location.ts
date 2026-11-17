@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { shouldIgnoreOlderGpsTime, type GpsUpdatePayload, validateGpsUpdate } from "@/lib/gps-update";
+import { type GpsUpdatePayload, validateGpsUpdate } from "@/lib/gps-update";
 
 const json = (body: Record<string, unknown>, status: number) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 
@@ -33,21 +33,19 @@ export const Route = createFileRoute("/api/public/update-location")({
         if (!device) { await log(401); return json({ error: "unauthorized" }, 401); }
         if (device.bus_id !== bus.id) { await log(403); return json({ error: "wrong_bus" }, 403); }
 
-        const { data: stored } = await supabaseAdmin.from("bus_locations").select("gps_time,received_at").eq("bus_id", bus.id).maybeSingle();
-        if (!shouldIgnoreOlderGpsTime(stored?.gps_time, stored?.received_at, gpsTime)) {
-          const { error } = await supabaseAdmin.from("bus_locations").upsert({
-            bus_id: bus.id,
-            lat: latitude ?? 0,
-            lng: longitude ?? 0,
-            speed_kmh: typeof body.speed_kmh === "number" && Number.isFinite(body.speed_kmh) ? body.speed_kmh : 0,
-            heading: typeof body.heading === "number" && Number.isFinite(body.heading) ? body.heading : 0,
-            satellites: typeof body.satellites === "number" && Number.isInteger(body.satellites) && body.satellites >= 0 ? body.satellites : 0,
-            gps_time: gpsTime.toISOString(),
-            received_at: new Date().toISOString(),
-          }, { onConflict: "bus_id" });
-          if (error) { await log(400); return json({ error: "invalid_data" }, 400); }
-          await supabaseAdmin.from("gps_devices").update({ last_seen: new Date().toISOString() }).eq("id", device.id);
-        }
+        const receivedAt = new Date().toISOString();
+        const { error } = await supabaseAdmin.from("bus_locations").upsert({
+          bus_id: bus.id,
+          lat: latitude ?? 0,
+          lng: longitude ?? 0,
+          speed_kmh: typeof body.speed_kmh === "number" && Number.isFinite(body.speed_kmh) ? body.speed_kmh : 0,
+          heading: typeof body.heading === "number" && Number.isFinite(body.heading) ? body.heading : 0,
+          satellites: typeof body.satellites === "number" && Number.isInteger(body.satellites) && body.satellites >= 0 ? body.satellites : 0,
+          gps_time: gpsTime.toISOString(),
+          received_at: receivedAt,
+        }, { onConflict: "bus_id" });
+        if (error) { await log(400); return json({ error: "invalid_data" }, 400); }
+        await supabaseAdmin.from("gps_devices").update({ last_seen: receivedAt }).eq("id", device.id);
         await log(200);
         return json({ ok: true }, 200);
       },
