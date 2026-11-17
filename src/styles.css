@@ -126,3 +126,37 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+.map-sheet {
+  max-height: min(74svh, 540px);
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  border-radius: 18px 18px 0 0;
+  background: var(--card);
+  color: var(--card-foreground);
+  touch-action: pan-y;
+}
+.map-sheet-dark {
+  --card: oklch(0.20 0.022 248);
+  --card-foreground: oklch(0.97 0.006 244);
+  --muted: oklch(0.27 0.025 248);
+  --muted-foreground: oklch(0.74 0.025 241);
+  --border: oklch(0.36 0.027 246);
+  --primary: oklch(0.70 0.13 235);
+  --primary-foreground: oklch(0.20 0.022 248);
+  --secondary: oklch(0.27 0.025 248);
+  --secondary-foreground: oklch(0.97 0.006 244);
+}
+.map-sheet-handle {
+  display: grid;
+  height: 56px;
+  cursor: grab;
+  place-items: center;
+  touch-action: none;
+}
+.map-sheet-handle:active { cursor: grabbing; }
+.map-sheet-grip {
+  width: 44px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--muted-foreground) 65%, transparent);
+}
